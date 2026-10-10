@@ -1,6 +1,19 @@
+secrets.h
+.venv/
 __pycache__/
 *.pyc
-.venv/
-*.aux
-*.log
-*.out
+.DS_Store
+# LaTeX build
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+# study logs with participant data are not committed
+study/log*.csv
+# large videos are release assets
+media/video/*.mp4
+media/video/*.MOV

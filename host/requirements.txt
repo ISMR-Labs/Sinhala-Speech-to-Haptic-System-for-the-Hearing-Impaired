@@ -1,0 +1,5 @@
+numpy
+requests
+pyserial
+sounddevice        # microphone capture (needs PortAudio: brew install portaudio / apt install libportaudio2)
+faster-whisper     # Sinhala ASR on CPU (CTranslate2); first run downloads the model
