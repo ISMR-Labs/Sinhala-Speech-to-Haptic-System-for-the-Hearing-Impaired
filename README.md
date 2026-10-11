@@ -6,9 +6,9 @@ ESP32-S3 plays the pattern on 18 vibration modules arranged as a 3 x 3 grid on t
 grid on the upper back.
 
 <p align="center">
-  <img src="media/mannequin-turntable.gif" width="46%" alt="Turntable render of a mannequin wearing the 18 vibration modules, 3 x 3 on the chest and 3 x 3 on the upper back, with the leads running to the controller box on the lower back">
-  <img src="media/photos/2026-09-24-vibration-array/IMG_7163.jpg" width="26%" alt="17 vibration modules in printed pods on sleeved leads">
-  <img src="media/photos/2026-09-24-vibration-array/IMG_7172.jpg" width="26%" alt="Controller box with push button and the module harness">
+  <img src="media/mannequin-turntable.gif" width="32%" alt="Turntable render of a mannequin wearing the 18 vibration modules, 3 x 3 on the chest and 3 x 3 on the upper back, with the leads running to the controller box on the lower back">
+  <img src="media/readme/harness.jpg" width="32%" alt="17 vibration modules in printed pods on sleeved leads">
+  <img src="media/readme/controller.jpg" width="32%" alt="Controller box with push button and the module harness">
 </p>
 <p align="center"><sub>Left: module placement on a mannequin (render from <code>hardware/mannequin/mannequin.scad</code>). Middle and right: the prototype harness, September 2026.</sub></p>
 

@@ -6,59 +6,78 @@
 spin = 0;
 pitch = 80;              // module pitch, both grids
 pod = [32.5, 40.5, 10.1]; // module pod outer size (x width, z height, y depth)
-chest_z = 1330;          // height of the middle row of the chest grid
+chest_z = 1320;          // height of the middle row of the chest grid
 back_z  = 1360;          // middle row of the back grid (slightly higher, between the shoulder blades)
 show_leads = true;
 
 $fn = 48;
 
-skin   = [0.82, 0.82, 0.84];
+skin   = [0.86, 0.79, 0.71];   // mannequin beige
 podcol = [0.16, 0.42, 0.85];
 leadcl = [0.12, 0.12, 0.12];
 boxcol = [0.95, 0.95, 0.95];
 
-module ell(rx, ry, rz) scale([rx, ry, rz]) sphere(1, $fn = 56);
+module ell(rx, ry, rz) scale([rx, ry, rz]) sphere(1, $fn = 64);
 
-// torso: an elliptical taper from the hips to the shoulders (exact radii, so pods sit on the surface)
-hip_z = 1060; sh_z = 1440;
-hip_r = [185, 125]; sh_r = [205, 112];
-function torso_rx(z) = hip_r[0] + (sh_r[0] - hip_r[0]) * (z - hip_z) / (sh_z - hip_z);
-function torso_ry(z) = hip_r[1] + (sh_r[1] - hip_r[1]) * (z - hip_z) / (sh_z - hip_z);
+// torso profile: elliptical slices (z, rx, ry), joined by linear tapers so the radii at any
+// height are exact and the pods can be placed on the surface
+// control points (z, rx, ry); the profile is a Catmull-Rom curve through them, sampled every 20 mm
+ctrl = [[960, 170, 118], [1000, 178, 122], [1060, 182, 124], [1170, 152, 100], [1330, 186, 118], [1430, 198, 108], [1460, 170, 92]];
+function cr(p0, p1, p2, p3, t) = 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+function seg_pt(i, t) = let(p0 = ctrl[max(i - 1, 0)], p1 = ctrl[i], p2 = ctrl[i + 1], p3 = ctrl[min(i + 2, len(ctrl) - 1)])
+  [p1[0] + (p2[0] - p1[0]) * t, cr(p0[1], p1[1], p2[1], p3[1], t), cr(p0[2], p1[2], p2[2], p3[2], t)];
+profile = [for (i = [0 : len(ctrl) - 2], k = [0 : 4]) seg_pt(i, k / 5)];
+function lerp(a, b, t) = a + (b - a) * t;
+function torso_r(z, k) =
+  z <= profile[0][0] ? profile[0][k] :
+  z >= profile[len(profile) - 1][0] ? profile[len(profile) - 1][k] :
+  [for (i = [0 : len(profile) - 2]) if (z >= profile[i][0] && z < profile[i + 1][0])
+     lerp(profile[i][k], profile[i + 1][k], (z - profile[i][0]) / (profile[i + 1][0] - profile[i][0]))][0];
+function torso_rx(z) = torso_r(z, 1);
+function torso_ry(z) = torso_r(z, 2);
+
 module torso() {
-  translate([0, 0, hip_z])
-    linear_extrude(height = sh_z - hip_z, scale = [sh_r[0] / hip_r[0], sh_r[1] / hip_r[1]], slices = 8)
-      scale([hip_r[0], hip_r[1]]) circle(1, $fn = 72);
-  translate([0, 0, sh_z]) ell(sh_r[0], sh_r[1], 38);   // rounded shoulders
-  translate([0, 0, hip_z]) ell(hip_r[0], hip_r[1], 50); // rounded hips
+  for (i = [0 : len(profile) - 2]) {
+    a = profile[i]; b = profile[i + 1];
+    if (b[0] > a[0])
+      translate([0, 0, a[0]])
+        linear_extrude(height = b[0] - a[0] + 0.3, scale = [b[1] / a[1], b[2] / a[2]], slices = 2)
+          scale([a[1], a[2]]) circle(1, $fn = 96);
+  }
+  // sloping shoulders and trapezius
+  hull() {
+    translate([0, 0, 1460]) ell(166, 90, 16);         // flat top of the torso
+    translate([0, 0, 1462]) ell(80, 60, 30);          // trapezius rise at the neck
+    for (s = [-1, 1]) translate([s * 182, 0, 1428]) sphere(42);
+  }
+  translate([0, 0, 960]) ell(170, 118, 40);          // seat
 }
 module neck_head() {
-  translate([0, 0, 1470]) cylinder(h = 90, r1 = 62, r2 = 55);
-  translate([0, 0, 1660]) ell(95, 105, 118);
+  translate([0, 0, 1440]) cylinder(h = 110, r1 = 60, r2 = 54);
+  hull() {
+    translate([0, 0, 1665]) ell(84, 96, 112);        // cranium
+    translate([0, -12, 1590]) sphere(52);            // jaw
+  }
 }
 module arms() {
   for (s = [-1, 1]) {
-    translate([s * 215, 0, 1420]) sphere(52);                         // shoulder
-    hull() {                                                          // upper arm
-      translate([s * 220, 0, 1400]) sphere(48);
-      translate([s * 240, 20, 1130]) sphere(42);
-    }
-    hull() {                                                          // forearm
-      translate([s * 240, 20, 1130]) sphere(40);
-      translate([s * 250, 60, 900]) sphere(34);
-    }
+    translate([s * 215, 0, 1410]) sphere(50);                             // deltoid
+    hull() { translate([s * 222, 0, 1395]) sphere(44); translate([s * 250, -15, 1150]) sphere(38); }   // upper arm
+    translate([s * 250, -15, 1150]) sphere(38);                           // elbow
+    hull() { translate([s * 250, -15, 1150]) sphere(38); translate([s * 268, -75, 905]) sphere(28); }  // forearm
+    translate([s * 272, -90, 860]) rotate([10, s * 8, 0]) ell(26, 18, 52); // hand
   }
 }
 module legs() {
-  for (s = [-1, 1]) hull() {
-    translate([s * 95, 0, 1040]) sphere(85);
-    translate([s * 95, 0, 520]) sphere(62);
-    translate([s * 95, 0, 60]) ell(60, 110, 55);
+  for (s = [-1, 1]) {
+    hull() { translate([s * 92, 0, 1010]) sphere(88); translate([s * 98, 0, 520]) sphere(64); }    // thigh
+    translate([s * 98, 0, 520]) sphere(64);                                                          // knee
+    hull() { translate([s * 98, 0, 520]) sphere(58); translate([s * 100, 0, 95]) sphere(42); }       // shin
+    translate([s * 100, -45, 32]) ell(52, 118, 32);                                                  // foot
   }
 }
 module stand() {
-  color([0.35, 0.35, 0.38]) {
-    translate([0, 0, 0]) cylinder(h = 12, r = 420);     // turntable disc keeps the bounding box constant
-  }
+  color([0.35, 0.35, 0.38]) cylinder(h = 12, r = 420);   // turntable disc keeps the bounding box constant
 }
 
 module pod_at(x, z, side) {   // side = +1 front (-y is the face), -1 back
